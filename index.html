@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="theme-color" content="#a300fa">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steller Loom - Tech Solutions</title>
+    <!-- Add Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Add these new styles */
+        .header {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .search-bar input {
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 300px;
+        }
+        
+        .account-section {
+            position: relative;
+        }
+        
+        .account-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 200px;
+            z-index: 100;
+        }
+        
+        .categories {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            justify-content: center;
+        }
+        
+        .category-btn {
+            padding: 0.8rem 1.5rem;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .category-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        /* Keep existing styles and add these modifications */
+    </style>
+</head>
+<body>
+    <header class="header">
+        <img src="images/Steller Loom web logo.png" alt="Steller Loom Logo" class="logo">
+        
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search accessories...">
+            <button onclick="searchProducts()"><i class="fas fa-search"></i></button>
+        </div>
+        
+        <!-- Account Section -->
+        <div class="account-section">
+            <button onclick="toggleAccountDropdown()">
+                <i class="fas fa-user-circle"></i> Account
+            </button>
+            <div class="account-dropdown" id="accountDropdown">
+                <div id="authButtons">
+                    <button onclick="showAuthModal('login')">Login</button>
+                    <button onclick="showAuthModal('register')">Register</button>
+                </div>
+                <div id="userInfo" style="display:none;">
+                    <p>Welcome, <span id="usernameDisplay"></span>!</p>
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="nav-links">
+            <a href="cart.html">Cart (<span id="cart-count">0</span>)</a>
+            <a href="wishlist.html">Wishlist (<span id="wishlist-count">0</span>)</a>
+        </nav>
+    </header>
+
+    <!-- Auth Modal -->
+    <div id="authModal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            <h2 id="modalTitle">Login</h2>
+            <form id="authForm">
+                <input type="text" id="authUsername" placeholder="Username" required>
+                <input type="password" id="authPassword" placeholder="Password" required>
+                <button type="submit" id="authSubmit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="categories">
+        <button class="category-btn active" data-category="all">All</button>
+        <button class="category-btn" data-category="mobile">Mobile</button>
+        <button class="category-btn" data-category="laptop">Laptop</button>
+        <button class="category-btn" data-category="charging">Charging</button>
+        <button class="category-btn" data-category="protection">Protection</button>
+    </div>
+
+    <!-- Products Grid -->
+    <section id="products" class="products-grid"></section>
+
+    <script>
+        // Extended product list with categories
+        const products = [
+            { id: 1, name: "Wireless Charger", price: 29.99, category: "mobile charging" },
+            { id: 2, name: "Laptop Sleeve", price: 49.99, category: "laptop protection" },
+            { id: 3, name: "Bluetooth Headphones", price: 79.99, category: "mobile" },
+            { id: 4, name: "USB-C Hub", price: 39.99, category: "laptop charging" },
+            { id: 5, name: "Tempered Glass Screen Protector", price: 14.99, category: "mobile protection" },
+            { id: 6, name: "Laptop Stand", price: 59.99, category: "laptop" },
+            { id: 7, name: "Portable SSD", price: 99.99, category: "laptop" },
+            { id: 8, name: "Phone Camera Lens Kit", price: 34.99, category: "mobile" },
+            { id: 9, name: "Ergonomic Wireless Mouse", price: 24.99, category: "laptop" },
+            { id: 10, name: "Fast Charging Cable", price: 9.99, category: "mobile charging" }
+        ];
+
+        // User Account System
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const users = JSON.parse(localStorage.getItem('users')) || [];
+
+        function updateUserDisplay() {
+            if (currentUser) {
+                document.getElementById('authButtons').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('usernameDisplay').textContent = currentUser.username;
+            } else {
+                document.getElementById('authButtons').style.display = 'block';
+                document.getElementById('userInfo').style.display = 'none';
+            }
+        }
+
+        function showAuthModal(type) {
+            document.getElementById('modalTitle').textContent = type === 'login' ? 'Login' : 'Register';
+            document.getElementById('authSubmit').textContent = type === 'login' ? 'Login' : 'Register';
+            document.getElementById('authForm').onsubmit = (e) => handleAuth(e, type);
+            document.getElementById('authModal').style.display = 'block';
+        }
+
+        function handleAuth(e, type) {
+            e.preventDefault();
+            const username = document.getElementById('authUsername').value;
+            const password = document.getElementById('authPassword').value;
+
+            if (type === 'login') {
+                const user = users.find(u => u.username === username && u.password === password);
+                if (user) {
+                    currentUser = user;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    closeAuthModal();
+                    updateUserDisplay();
+                } else {
+                    alert('Invalid credentials');
+                }
+            } else {
+                if (users.some(u => u.username === username)) {
+                    alert('Username already exists');
+                } else {
+                    users.push({ username, password });
+                    localStorage.setItem('users', JSON.stringify(users));
+                    alert('Registration successful! Please login.');
+                    showAuthModal('login');
+                }
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            updateUserDisplay();
+        }
+
+        // Search Functionality
+        function searchProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.category.includes(query)
+            );
+            renderProducts(filtered);
+        }
+
+        // Category Filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const category = btn.dataset.category;
+                const filtered = category === 'all' 
+                    ? products 
+                    : products.filter(p => p.category.includes(category));
+                renderProducts(filtered);
+            });
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateUserDisplay();
+            renderProducts(products);
+            document.querySelector('.category-btn[data-category="all"]').click();
+        });
+
+        // Modified render function to accept products array
+        function renderProducts(productsArray) {
+            const grid = document.querySelector('.products-grid');
+            grid.innerHTML = productsArray.map(product => `
+                <div class="product-card">
+                    <img src="images/product-${product-id}.jpg" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p>$${product.price}</p>
+                    <button onclick="addToCart(${product.id})">Add to Cart</button>
+                    <button onclick="addToWishlist(${product.id})">Add to Wishlist</button>
+                </div>
+            `).join('');
+        }
+
+        // Add to Cart and Wishlist (example functions)
+        function addToCart(productId) {
+            alert(`Product ${productId} added to cart`);
+        }
+
+        function addToWishlist(productId) {
+            alert(`Product ${productId} added to wishlist`);
+        }
+
+        // Keep existing cart/wishlist functions
+        function toggleAccountDropdown() {
+            const dropdown = document.getElementById('accountDropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+    <title>Steller Loom - Wishlist</title>
+    <style>
+        /* Include all wishlist styles from search result [2] */
+        body {
+            font-family: 'Russo One', sans-serif;
+            background: #f8f9fa;
+            padding: 2rem;
+        }
+        h1 {
+            color: #2A2A72;
+        }
+        .wishlist-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .wishlist-item img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Your Wishlist</h1>
+    <div id="wishlist-items"></div>
+
+    <script>
+        const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+        
+        document.getElementById('wishlist-items').innerHTML = wishlist
+            .map(item => `
+                <div class="wishlist-item">
+                    <img src="product-${item.id}.jpg" alt="${item.name}">
+                    <div>
+                        <h3>${item.name}</h3>
+                        <p>$${item.price.toFixed(2)}</p>
+                    </div>
+                </div>
+            `).join('');
+    </script>
+</body>
+</html>
